@@ -4,7 +4,7 @@
 #--------------------------------------------------------------------------------
 
 cmake_minimum_required(VERSION 3.12) # cmake version here
-project(executable VERSION 0.1 LANGUAGES CXX) # Your project name here
+project(ecs-experimental VERSION 0.1 LANGUAGES CXX) # Your project name here
 
 set(CMAKE_CXX_STANDARD 20) # C++ version here
 set(DISABLE_CONSOLE 0) # Console usage
