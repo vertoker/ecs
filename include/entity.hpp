@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base.hpp"
 #include "component.hpp"
 
 #include <atomic>
@@ -7,8 +8,6 @@
 #include <unordered_map>
 
 namespace ecs {
-    using Entity = std::uint32_t;
-
     class EntityManager {
     public:
         static const size_t STANDARD_RESERVE_ENTITIES = 5000;
@@ -18,9 +17,9 @@ namespace ecs {
             entities.reserve(reserveEntities);
         }
 
-        Entity CreateEntity(size_t reserveComponents = STANDARD_RESERVE_COMPONENTS) {
-            static std::atomic<Entity> counter{};
-            Entity newEntity = counter++;
+        entity CreateEntity(size_t reserveComponents = STANDARD_RESERVE_COMPONENTS) {
+            static std::atomic<entity> counter{};
+            entity newEntity = counter++;
 
             std::vector<type_index> newComponents{};
             newComponents.reserve(reserveComponents);
@@ -29,11 +28,11 @@ namespace ecs {
             return newEntity;
         }
 
-        void DestroyEntity(Entity entity) {
+        void DestroyEntity(entity entity) {
             entities.erase(entity);
         }
 
     private:
-        std::unordered_map<Entity, std::vector<type_index>> entities{};
+        std::unordered_map<entity, std::vector<type_index>> entities{};
     };
 }
