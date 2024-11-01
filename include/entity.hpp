@@ -1,7 +1,39 @@
 #pragma once
 
-#include <iostream> // temp
+#include "component.hpp"
 
-using Entity = std::uint32_t;
+#include <atomic>
+#include <vector>
+#include <unordered_map>
 
-const Entity MAX_ENTITIES = 5000;
+namespace ecs {
+    using Entity = std::uint32_t;
+
+    class EntityManager {
+    public:
+        static const size_t STANDARD_RESERVE_ENTITIES = 5000;
+        static const size_t STANDARD_RESERVE_COMPONENTS = 10;
+
+        EntityManager(size_t reserveEntities = STANDARD_RESERVE_ENTITIES) {
+            entities.reserve(reserveEntities);
+        }
+
+        Entity CreateEntity(size_t reserveComponents = STANDARD_RESERVE_COMPONENTS) {
+            static std::atomic<Entity> counter{};
+            Entity newEntity = counter++;
+
+            std::vector<type_index> newComponents{};
+            newComponents.reserve(reserveComponents);
+
+            entities.emplace(newEntity, newComponents);
+            return newEntity;
+        }
+
+        void DestroyEntity(Entity entity) {
+            entities.erase(entity);
+        }
+
+    private:
+        std::unordered_map<Entity, std::vector<type_index>> entities{};
+    };
+}

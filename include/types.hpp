@@ -4,19 +4,19 @@
 #include <atomic>
 
 namespace ecs {
-    using type_index_t = std::uint32_t;
+    using type_index = std::uint32_t;
 
-    struct type_index_counter final {
-        [[nodiscard]] static type_index_t next() noexcept {
-            static std::atomic<type_index_t> counter{};
+    struct TypeIndexatorCounter final {
+        [[nodiscard]] static type_index next() noexcept {
+            static std::atomic<type_index> counter{};
             return counter++;
         }
     };
 
     template <typename Type>
-    struct type_index final {
-        [[nodiscard]] static type_index_t value() noexcept {
-            static const type_index_t value = ecs::type_index_counter::next();
+    struct TypeIndexator final {
+        [[nodiscard]] static type_index value() noexcept {
+            static const type_index value = ecs::TypeIndexatorCounter::next();
             return value;
         }
     };
