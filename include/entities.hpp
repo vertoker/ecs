@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base.hpp"
-#include "component.hpp"
+#include "components.hpp"
 
 namespace ecs {
     

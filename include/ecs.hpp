@@ -1,10 +1,8 @@
 #pragma once
 
-#include "entity.hpp"
-#include "component.hpp"
+#include "entities.hpp"
+#include "components.hpp"
 #include "systems.hpp"
-
-#include "test.hpp"
 
 #include <atomic>
 #include <vector>
@@ -12,6 +10,8 @@
 #include <memory>
 
 namespace ecs {
+
+    // TODO: refactor to the original ECS, every entity can have only one type definition
 
     class World {
     public:
