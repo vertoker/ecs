@@ -3,10 +3,13 @@
 #include "base.hpp"
 #include "types.hpp"
 
+#include <type_traits>
+
 namespace ecs {
 
     // Interface Component Pool
 
+    template<size_t ENTITIES_COUNT = STANDARD_ENTITIES>
     class IComponentPool {
     public:
         virtual ~IComponentPool() = default;
@@ -14,27 +17,26 @@ namespace ecs {
 
     // Component Pool
 
-    template<typename TComponent>
-    class ComponentPool : public IComponentPool {
+    template<typename TComponent, size_t ENTITIES_COUNT = STANDARD_ENTITIES>
+    class ComponentPool : public IComponentPool<ENTITIES_COUNT> {
     public:
-        ComponentPool(size_t reserveComponents = RESERVED_COMPONENT_POOL) {
-            components.reserve(reserveComponents);
+        static_assert(std::is_default_constructible_v<TComponent>, "Component must contains default constructor");
+
+        ComponentPool() {
+            
         }
 
-        component_index AddComponent(TComponent component) {
-            component_index newComponentIndex = componentCounter++;
-            components.emplace(newComponentIndex, component);
-
-            return newComponentIndex;
+        void InsertComponent(entity entity, TComponent component) {
+            components[entity] = component;
         }
-
-        void RemoveComponent(component_index componentIndex) {
-            TComponent component = components[componentIndex];
-            components.erase(componentIndex);
+        void RemoveComponent(entity entity, TComponent component) {
+            
+        }
+        TComponent& GetComponent(entity entity) {
+            return components[entity];
         }
 
     private:
-        std::atomic<component_index> componentCounter{};
-        std::unordered_map<component_index, TComponent> components{};
+        std::array<TComponent, ENTITIES_COUNT> components{};
     };
 }

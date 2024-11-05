@@ -26,10 +26,9 @@ namespace ecs {
         }
     };
 
-    static const size_t RESERVED_ENTITIES = 5000;
-    static const size_t RESERVED_ENTITY_COMPONENTS = 32;
+    static const size_t STANDARD_ENTITIES = 5000;
+    static const size_t STANDARD_COMPONENTS = 32;
 
-    static const size_t RESERVED_COMPONENT_POOL = 32;
     static const size_t RESERVED_POOLS = 4;
 }
 
