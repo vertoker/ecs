@@ -1,8 +1,9 @@
 #pragma once
 
+#include "dynamic_bitset.hpp"
+
 #include "base.hpp"
 #include "types.hpp"
-#include "dynamic_bitset.hpp"
 #include "component_pool.hpp"
 
 #include <atomic>
@@ -53,21 +54,26 @@ namespace ecs {
 
         template <typename TComponent>
         void RegisterComponent() {
-            type_index componentType = TypeIndexator<TComponent>::value();
-            assert(!component_pools_.contains(componentType) && "Component already registered");
+            type_index component_type = TypeIndexator<TComponent>::value();
+            assert(!component_pools_.contains(component_type) && "Component already registered");
 
             auto pool = std::make_shared<ComponentPool<TComponent>>(entities_capacity_);
             auto interfacePool = std::static_pointer_cast<AbstractComponentPool>(pool);
-            component_pools_.insert_or_assign(componentType, interfacePool);
+            component_pools_.insert_or_assign(component_type, interfacePool);
+
+            static size_t component_counter = 0;
+            component_indexes_.insert_or_assign(component_type, component_counter++);
         };
+
+        // UnregisterComponent is all lost feature
 
         template <typename TComponent>
-        void UnregisterComponent() {
-            type_index componentType = TypeIndexator<TComponent>::value();
-            assert(component_pools_.contains(componentType) && "Component doesn't registered");
+        size_t GetComponentTypeIndex() {
+            type_index component_type = TypeIndexator<TComponent>::value();
+            assert(component_pools_.contains(component_type) && "Component is not registered");
 
-            component_pools_.erase(componentType);
-        };
+            return component_indexes_[component_type];
+        }
 
     public: // Components
 
@@ -75,14 +81,21 @@ namespace ecs {
         void AddComponent(entity entity, TComponent component) {
             auto pool = GetComponentPool<TComponent>();
             pool->InsertComponent(entity, component);
+            
+            assert(entity < signatures.size() && "Entity out of range");
+            dynamic_bitset& signature = signatures[entity];
 
-            dynamic_bitset signature = signatures[entity];
-            //signature.set(0, );
+            size_t index = GetComponentTypeIndex<TComponent>();
+            signature.set(index, true);
         };
         
         template <typename TComponent>
         void RemoveComponent(entity entity) {
-            
+            assert(entity < signatures.size() && "Entity out of range");
+            dynamic_bitset& signature = signatures[entity];
+
+            size_t index = GetComponentTypeIndex<TComponent>();
+            signature.set(index, false);
         };
         
         template <typename TComponent>
@@ -90,34 +103,40 @@ namespace ecs {
             auto pool = GetComponentPool<TComponent>();
             return pool->GetComponent(entity);
         };
+        
+        /*template <typename TComponent>
+        TComponent& GetComponents(entity entity) {
+            auto pool = GetComponentPool<TComponent>();
+            return pool->GetComponent(entity);
+        };*/
 
     private:
         template <typename TComponent>
         std::shared_ptr<ComponentPool<TComponent>> GetOrCreateComponentPool() {
-            type_index componentType = TypeIndexator<TComponent>::value();
+            type_index component_type = TypeIndexator<TComponent>::value();
 
-            if (component_pools_.find(componentType) == component_pools_.end()) {
+            if (component_pools_.find(component_type) == component_pools_.end()) {
                 RegisterComponent<TComponent>();
-                return component_pools_[componentType];
+                return component_pools_[component_type];
             }
             
-            std::shared_ptr<AbstractComponentPool> componentPool = component_pools_[componentType];
+            std::shared_ptr<AbstractComponentPool> componentPool = component_pools_[component_type];
             return std::static_pointer_cast<ComponentPool<TComponent>>(componentPool);
         }
 
         template <typename TComponent>
         std::shared_ptr<ComponentPool<TComponent>> GetComponentPool() {
-            type_index componentType = TypeIndexator<TComponent>::value();
+            type_index component_type = TypeIndexator<TComponent>::value();
 
-            assert(component_pools_.find(componentType) != component_pools_.end() && "ComponentPool can't found, register component");
+            assert(component_pools_.find(component_type) != component_pools_.end() && "ComponentPool can't found, register component");
             
-            std::shared_ptr<AbstractComponentPool> componentPool = component_pools_[componentType];
+            std::shared_ptr<AbstractComponentPool> componentPool = component_pools_[component_type];
             return std::static_pointer_cast<ComponentPool<TComponent>>(componentPool);
         }
         
     public: // Readonly Data
 
-    public: // Memory Data Modification
+    public: // Data Modification
         void resize_entities(uint32_t new_size) {
             if (new_size == entities_capacity_) return;
 
@@ -151,6 +170,7 @@ namespace ecs {
             assert(component_pools_.size() <= new_capacity && "New capacity will erase registered components");
 
             component_pools_.reserve(new_capacity);
+            component_indexes_.reserve(new_capacity);
             pools_capacity_ = new_capacity;
         }
 
@@ -164,5 +184,6 @@ namespace ecs {
         uint32_t entities_count_ = 0;
 
         std::unordered_map<type_index, std::shared_ptr<AbstractComponentPool>> component_pools_;
+        std::unordered_map<type_index, size_t> component_indexes_;
     };
 }

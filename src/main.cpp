@@ -13,7 +13,9 @@ struct Position {
 };
 
 class PositionSystem : public ecs::System {
-
+    void run() {
+        
+    }
 };
 
 int main(int argc, char* argv[]) {
@@ -38,6 +40,8 @@ int main(int argc, char* argv[]) {
     ecsWorld.AddComponent(entity1, A{});
     //ecsWorld.AddComponent(entity2, B{.v1=1});
     ecsWorld.AddComponent(entity2, Position());
+
+    ecsSystems.RegisterSystem<PositionSystem>();
 
     return 0;
 }

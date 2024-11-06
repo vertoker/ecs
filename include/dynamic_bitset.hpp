@@ -31,7 +31,7 @@ namespace ecs
 		    else // merge source and inverse answer bytes with AND
                 data_[byte_index] &= (~bitfield);
         }
-        bool get(const size_t& bit_index) {
+        [[nodiscard]] bool get(const size_t& bit_index) {
             size_t byte_index = bit_index / 8;
 		    size_t offset = bit_index % 8;
             

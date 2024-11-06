@@ -11,51 +11,52 @@
 #include <set>
 
 namespace ecs {
-    
+
+    class Systems;
+
     class System {
-    protected:
-        std::set<entity> entities;
+    public:
+        virtual ~System() = default;
+        World& world() { return *world_; }
+
+    private:
+        std::unique_ptr<World> world_;
+
+        friend Systems;
     };
 
     class Systems {
     public:
-        Systems(World& world) : world{world} {
-            
-        }
+        Systems(World& world) : world_{world} { }
+        ~Systems() = default;
 
     public:
         template<typename TSystem>
         std::shared_ptr<TSystem> RegisterSystem() {
-            static_assert(std::is_default_constructible_v<TSystem>, "System must contains default constructor");
+            //static_assert(std::is_default_constructible_v<TSystem>, "System must contains default constructor");
             type_index systemType = TypeIndexator<TSystem>::value();
 
-            assert(systems.find(systemType) != systems.end() && "Registering system more than once");
+            assert(systems_.find(systemType) == systems_.end() && "Registering system more than once");
 
             auto system = std::make_shared<TSystem>();
-            systems.insert_or_assign(systemType, system);
+            auto baseSystem = std::static_pointer_cast<System>(system);
+
+            baseSystem->world_ = std::make_unique<World>(world_);
+            systems_.insert_or_assign(systemType, baseSystem);
             return system;
         }
-        template<typename TSystem>
-        void RegisterSystem(std::shared_ptr<TSystem> system) {
-            type_index systemType = TypeIndexator<TSystem>::value();
-
-            assert(systems.find(systemType) != systems.end() && "Registering system more than once");
-
-            systems.insert_or_assign(systemType, system);
-        }
-
         template<typename TSystem>
         void UnregisterSystem() {
             static_assert(std::is_default_constructible_v<TSystem>, "System must contains default constructor");
             type_index systemType = TypeIndexator<TSystem>::value();
 
-            assert(systems.find(systemType) == systems.end() && "Can't find system in systems");
+            assert(systems_.find(systemType) == systems_.end() && "Can't find system in systems");
             
-            systems.erase(systemType);
+            systems_.erase(systemType);
         }
         
     private:
-        World world;
-        std::unordered_map<type_index, std::shared_ptr<System>> systems{};
+        World world_;
+        std::unordered_map<type_index, std::shared_ptr<System>> systems_{};
     };
 }

@@ -64,6 +64,9 @@ namespace ecs {
         TComponent& GetComponent(entity entity) {
             return components[entity];
         }
+        /*std::vector<TComponent>& GetComponents(entity entity) {
+            return components.iter;
+        }*/
 
     private:
         std::vector<TComponent> components;
