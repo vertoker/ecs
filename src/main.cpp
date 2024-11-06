@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     std::cout << ecs::TypeIndexator<A>::value();
     std::cout << std::endl;
 
-    ecs::World<3, 2> ecsWorld{};
+    ecs::World ecsWorld{3, 2, 4};
     ecs::Systems ecsSystems{ecsWorld};
     
     ecs::entity entity1 = ecsWorld.CreateEntity();

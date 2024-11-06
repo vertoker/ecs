@@ -14,8 +14,7 @@ namespace ecs {
     using entity = std::uint32_t;
     using component_index = std::uint32_t;
 
-    static const size_t STANDARD_ENTITIES = 5000;
-    static const size_t STANDARD_COMPONENTS = 32;
-
-    static const size_t RESERVED_POOLS = 4;
+    static const uint32_t DEFAULT_ENTITIES_CAPACITY = 5000;
+    static const uint32_t DEFAULT_ENTITY_CAPACITY = 32;
+    static const uint32_t DEFAULT_COMPONENT_POOLS_CAPACITY = 4;
 }
