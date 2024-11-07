@@ -11,15 +11,15 @@ namespace ecs {
 
     // Interface Component Pool
     
-    class AbstractComponentPool {
+    class IComponentPool {
     public:
-        virtual ~AbstractComponentPool() = default;
+        virtual ~IComponentPool() = default;
     };
 
     // Component Pool
 
     template<typename TComponent>
-    class ComponentPool : public AbstractComponentPool {
+    class ComponentPool : public IComponentPool {
         static_assert(std::is_move_constructible_v<TComponent>, "Cannot create pool for component which is not move constructible");
 	    static_assert(std::is_destructible_v<TComponent>, "Cannot create pool for component which is not destructible");
         static_assert(std::is_default_constructible_v<TComponent>, "Cannot create pool for component which doesn't has default constructor");
@@ -39,7 +39,7 @@ namespace ecs {
             resize(reserve_entities);
         }
 
-        std::shared_ptr<AbstractComponentPool> clone() const {
+        std::shared_ptr<IComponentPool> clone() const {
             if constexpr (std::is_copy_constructible_v<TComponent>) {
                 auto pool = std::make_shared<ComponentPool<TComponent>>();
                 pool->components = components;
@@ -65,7 +65,7 @@ namespace ecs {
             return components[entity];
         }
 
-        constexpr std::vector<TComponent>::iterator begin() { return components.begin(); }
+        constexpr std::vector<TComponent>::iterator begin() { return components.begin(); } // Iterate with entity filter
         constexpr std::vector<TComponent>::iterator end() { return components.end(); }
 
     private:

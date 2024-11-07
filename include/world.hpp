@@ -54,6 +54,15 @@ namespace ecs {
             if (entities_count_ == 0) return false;
             return !available_entities_.contains(entity);
         }
+
+        dynamic_bitset& GetSignature(const entity entity) {
+            assert(entity < entities_capacity_ && "Entity out of range");
+            return signatures[entity];
+        }
+        void SetSignature(const entity entity, dynamic_bitset signature) {
+            assert(entity < entities_capacity_ && "Entity out of range");
+            signatures[entity] = signature;
+        }
         
     public: // Component Pools
 
@@ -63,7 +72,7 @@ namespace ecs {
             assert(!component_pools_.contains(component_type) && "Component already registered");
 
             auto pool = std::make_shared<ComponentPool<TComponent>>(entities_capacity_);
-            auto interfacePool = std::static_pointer_cast<AbstractComponentPool>(pool);
+            auto interfacePool = std::static_pointer_cast<IComponentPool>(pool);
             component_pools_.insert_or_assign(component_type, interfacePool);
 
             static size_t component_counter = 0;
@@ -149,7 +158,7 @@ namespace ecs {
                 return component_pools_[component_type];
             }
             
-            std::shared_ptr<AbstractComponentPool> componentPool = component_pools_[component_type];
+            std::shared_ptr<IComponentPool> componentPool = component_pools_[component_type];
             return std::static_pointer_cast<ComponentPool<TComponent>>(componentPool);
         }
 
@@ -159,7 +168,7 @@ namespace ecs {
 
             assert(component_pools_.find(component_type) != component_pools_.end() && "ComponentPool can't found, register component");
             
-            std::shared_ptr<AbstractComponentPool> componentPool = component_pools_[component_type];
+            std::shared_ptr<IComponentPool> componentPool = component_pools_[component_type];
             return std::static_pointer_cast<ComponentPool<TComponent>>(componentPool);
         }
         
@@ -212,7 +221,7 @@ namespace ecs {
         std::set<entity> available_entities_;
         uint32_t entities_count_ = 0;
 
-        std::unordered_map<type_index, std::shared_ptr<AbstractComponentPool>> component_pools_;
+        std::unordered_map<type_index, std::shared_ptr<IComponentPool>> component_pools_;
         std::unordered_map<type_index, size_t> component_indexes_;
     };
 }

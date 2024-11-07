@@ -34,58 +34,35 @@ namespace ecs {
 
     // Default System Interfaces (you can add yours)
 
-    class IExecuteSystem : public System {
+    class ICollectionSystem {
     public:
         virtual void execute() = 0;
     };
 
-    class IRunSystem : public IExecuteSystem {
+    class IInitSystem : public ICollectionSystem {
+    public:
+        void execute() override { init(); } 
+        virtual void init() = 0;
+    };
+
+    class IRunSystem : public ICollectionSystem {
     public:
         void execute() override { run(); } 
         virtual void run() = 0;
     };
 
-    // Core Systems
-
-    class Systems {
+    class IDestroySystem : public ICollectionSystem {
     public:
-        Systems(World& world) : world_{world} { }
-        ~Systems() = default;
-
-    public:
-        template<typename TSystem>
-        std::shared_ptr<TSystem> RegisterSystem() {
-            //static_assert(std::is_default_constructible_v<TSystem>, "System must contains default constructor");
-            type_index systemType = TypeIndexator<TSystem>::value();
-
-            assert(systems_.find(systemType) == systems_.end() && "Registering system more than once");
-
-            auto system = std::make_shared<TSystem>();
-            auto baseSystem = std::static_pointer_cast<System>(system);
-
-            baseSystem->world_ = std::make_unique<World>(world_); // TODO refactor
-            systems_.insert_or_assign(systemType, baseSystem);
-            return system;
-        }
-        template<typename TSystem>
-        void UnregisterSystem() {
-            static_assert(std::is_default_constructible_v<TSystem>, "System must contains default constructor");
-            type_index systemType = TypeIndexator<TSystem>::value();
-
-            assert(systems_.find(systemType) == systems_.end() && "Can't find system in systems");
-            
-            systems_.erase(systemType);
-        }
-        
-    private:
-        World world_;
-        std::unordered_map<type_index, std::shared_ptr<System>> systems_{};
+        void execute() override { destroy(); } 
+        virtual void destroy() = 0;
     };
 
-    template <typename TSystem> requires std::derived_from<TSystem, IExecuteSystem>
-    class SystemExecuteCollection {
+    // Core Systems
+
+    template <typename TSystem> requires std::derived_from<TSystem, ICollectionSystem>
+    class SystemCollection {
     public:
-        SystemExecuteCollection() = default;
+        SystemCollection() = default;
 
         void execute() {
             for (auto it = systems.begin(); it != systems.end(); ++it) {
@@ -106,6 +83,42 @@ namespace ecs {
 
     private:
         // it uses ptr as hashable obj while system now is non const
-        std::unordered_set<std::shared_ptr<IExecuteSystem>> systems{};
+        std::unordered_set<std::shared_ptr<ICollectionSystem>> systems{};
+    };
+
+    class Systems {
+    public:
+        Systems(World& world) : world_{world} { }
+        ~Systems() = default;
+
+    public:
+        template<typename TSystem> requires std::derived_from<TSystem, System>
+        std::shared_ptr<TSystem> RegisterSystem() {
+            //static_assert(std::is_default_constructible_v<TSystem>, "System must contains default constructor");
+            type_index systemType = TypeIndexator<TSystem>::value();
+
+            assert(systems_.find(systemType) == systems_.end() && "Registering system more than once");
+
+            auto system = std::make_shared<TSystem>();
+            auto baseSystem = std::static_pointer_cast<System>(system);
+
+            baseSystem->world_ = std::make_unique<World>(world_); // TODO refactor
+            systems_.insert_or_assign(systemType, baseSystem);
+            return system;
+        }
+
+        template<typename TSystem> requires std::derived_from<TSystem, System>
+        void UnregisterSystem() {
+            type_index systemType = TypeIndexator<TSystem>::value();
+
+            assert(systems_.find(systemType) == systems_.end() && "Can't find system in systems");
+            
+            systems_.erase(systemType);
+        }
+        
+    private:
+        World world_;
+        std::unordered_map<type_index, std::shared_ptr<System>> system_collections_{}; // type of interface
+        std::unordered_map<type_index, std::shared_ptr<System>> systems_{}; // type of 
     };
 }

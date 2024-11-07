@@ -12,7 +12,7 @@ struct Position {
         : x{x}, y{y}, z{z} { }
 };
 
-class PositionSystem : public ecs::IRunSystem {
+class PositionSystem : public ecs::System, public ecs::IRunSystem {
 public:
     void run() override {
         for (auto it = begin<Position>(); it != end<Position>(); ++it) {
@@ -34,30 +34,32 @@ int main(int argc, char* argv[]) {
 
     // World
     
-    ecs::World ecsWorld{3, 2};
+    ecs::World world{3, 2};
     
-    ecs::entity entity1 = ecsWorld.CreateEntity();
-    ecs::entity entity2 = ecsWorld.CreateEntity();
-    ecs::entity entity3 = ecsWorld.CreateEntity();
+    ecs::entity entity1 = world.CreateEntity();
+    ecs::entity entity2 = world.CreateEntity();
+    ecs::entity entity3 = world.CreateEntity();
 
-    ecsWorld.RegisterComponent<A>();
-    //ecsWorld.RegisterComponent<B>();
-    ecsWorld.RegisterComponent<Position>();
+    world.RegisterComponent<A>();
+    //world.RegisterComponent<B>();
+    world.RegisterComponent<Position>();
 
-    ecsWorld.InsertComponent(entity1, A{});
-    //ecsWorld.AddComponent(entity1, A{});
-    //ecsWorld.InsertComponent(entity2, B{.v1=1});
-    ecsWorld.InsertComponent(entity2, Position());
+    world.InsertComponent(entity1, A{});
+    //world.AddComponent(entity1, A{});
+    //world.InsertComponent(entity2, B{.v1=1});
+    world.InsertComponent(entity2, Position());
 
+    auto& signature2 = world.GetSignature(entity2);
+    
     // Systems
 
-    ecs::Systems ecsSystems{ecsWorld};
-    ecs::SystemExecuteCollection<ecs::IRunSystem> runSystems{};
+    ecs::Systems ecsSystems{world};
+    ecs::SystemCollection<ecs::IRunSystem> runSystems{};
 
     auto posSystem = ecsSystems.RegisterSystem<PositionSystem>();
     runSystems.AddSystem(posSystem);
 
-    for (auto it = ecsWorld.begin<Position>(); it != ecsWorld.end<Position>(); ++it) {
+    for (auto it = world.begin<Position>(); it != world.end<Position>(); ++it) {
         auto& component = *it;
         std::cout << component.x;
     }
@@ -65,7 +67,7 @@ int main(int argc, char* argv[]) {
 
     runSystems.execute();
 
-    for (auto it = ecsWorld.begin<Position>(); it != ecsWorld.end<Position>(); ++it) {
+    for (auto it = world.begin<Position>(); it != world.end<Position>(); ++it) {
         auto& component = *it;
         std::cout << component.x;
     }
