@@ -14,6 +14,8 @@ namespace ecs {
 
     class Systems;
 
+    // Base System
+
     class System {
     public:
         virtual ~System() = default;
@@ -29,6 +31,21 @@ namespace ecs {
 
         friend Systems;
     };
+
+    // Default System Interfaces (you can add yours)
+
+    class IExecuteSystem : public System {
+    public:
+        virtual void execute() = 0;
+    };
+
+    class IRunSystem : public IExecuteSystem {
+    public:
+        void execute() override { run(); } 
+        virtual void run() = 0;
+    };
+
+    // Core Systems
 
     class Systems {
     public:
@@ -46,7 +63,7 @@ namespace ecs {
             auto system = std::make_shared<TSystem>();
             auto baseSystem = std::static_pointer_cast<System>(system);
 
-            baseSystem->world_ = std::make_unique<World>(world_);
+            baseSystem->world_ = std::make_unique<World>(world_); // TODO refactor
             systems_.insert_or_assign(systemType, baseSystem);
             return system;
         }
@@ -63,5 +80,32 @@ namespace ecs {
     private:
         World world_;
         std::unordered_map<type_index, std::shared_ptr<System>> systems_{};
+    };
+
+    template <typename TSystem> requires std::derived_from<TSystem, IExecuteSystem>
+    class SystemExecuteCollection {
+    public:
+        SystemExecuteCollection() = default;
+
+        void execute() {
+            for (auto it = systems.begin(); it != systems.end(); ++it) {
+                auto& ptr = *it;
+                ptr->execute();
+            }
+        }
+
+        void AddSystem(std::shared_ptr<TSystem> system) {
+            systems.insert(system);
+        }
+        void RemoveSystem(std::shared_ptr<TSystem> system) {
+            systems.erase(system);
+        }
+        void Clear() {
+            systems.clear();
+        }
+
+    private:
+        // it uses ptr as hashable obj while system now is non const
+        std::unordered_set<std::shared_ptr<IExecuteSystem>> systems{};
     };
 }

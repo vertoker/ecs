@@ -29,7 +29,7 @@ namespace ecs {
     public: // Entities
 
         entity CreateEntity() {
-            assert(entities_count_ < entities_capacity_ && "Too many active entities in world");
+            assert(available_entities_.size() > 0 && "Doesn't have available entities, expand entities capacity");
 
             entity newEntity = *available_entities_.begin();
             available_entities_.erase(newEntity);
@@ -47,6 +47,12 @@ namespace ecs {
             assert(!available_entities_.contains(entity) && "Entity already destroyed");
             available_entities_.insert(entity);
             entities_count_--;
+        }
+
+        bool ExistsEntity(const entity entity) {
+            assert(entity < entities_capacity_ && "Entity out of range");
+            if (entities_count_ == 0) return false;
+            return !available_entities_.contains(entity);
         }
         
     public: // Component Pools
@@ -75,24 +81,35 @@ namespace ecs {
         }
 
     public: // Components
-
+    
         template <typename TComponent>
         void AddComponent(const entity entity, TComponent component) {
+            assert(!ContainsComponent<TComponent>(entity) && "Already contains this component in this entity");
+
             auto pool = GetComponentPool<TComponent>();
             pool->InsertComponent(entity, component);
             
             assert(entity < signatures.size() && "Entity out of range");
             dynamic_bitset& signature = signatures[entity];
+            size_t index = GetComponentTypeIndex<TComponent>();
+            signature.set(index, true);
+        }
 
+        template <typename TComponent>
+        void InsertComponent(const entity entity, TComponent component) {
+            auto pool = GetComponentPool<TComponent>();
+            pool->InsertComponent(entity, component);
+            
+            assert(entity < signatures.size() && "Entity out of range");
+            dynamic_bitset& signature = signatures[entity];
             size_t index = GetComponentTypeIndex<TComponent>();
             signature.set(index, true);
         };
         
         template <typename TComponent>
         void RemoveComponent(const entity entity) {
-            assert(entity < signatures.size() && "Entity out of range");
+            assert(entity < entities_capacity_ && "Entity out of range");
             dynamic_bitset& signature = signatures[entity];
-
             size_t index = GetComponentTypeIndex<TComponent>();
             signature.set(index, false);
         };
@@ -102,6 +119,14 @@ namespace ecs {
             auto pool = GetComponentPool<TComponent>();
             return pool->GetComponent(entity);
         };
+
+        template <typename TComponent>
+        bool ContainsComponent(const entity entity) {
+            assert(entity < entities_capacity_ && "Entity out of range");
+            dynamic_bitset& signature = signatures[entity];
+            size_t index = GetComponentTypeIndex<TComponent>();
+            return signature.get(index);
+        }
         
         template <typename TComponent>
         std::vector<TComponent>::iterator begin() {

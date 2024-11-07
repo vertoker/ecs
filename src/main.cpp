@@ -12,9 +12,9 @@ struct Position {
         : x{x}, y{y}, z{z} { }
 };
 
-class PositionSystem : public ecs::System {
+class PositionSystem : public ecs::IRunSystem {
 public:
-    void run() {
+    void run() override {
         for (auto it = begin<Position>(); it != end<Position>(); ++it) {
             auto& component = *it;
             component.x += 1;
@@ -44,15 +44,18 @@ int main(int argc, char* argv[]) {
     //ecsWorld.RegisterComponent<B>();
     ecsWorld.RegisterComponent<Position>();
 
-    ecsWorld.AddComponent(entity1, A{});
-    //ecsWorld.AddComponent(entity2, B{.v1=1});
-    ecsWorld.AddComponent(entity2, Position());
+    ecsWorld.InsertComponent(entity1, A{});
+    //ecsWorld.AddComponent(entity1, A{});
+    //ecsWorld.InsertComponent(entity2, B{.v1=1});
+    ecsWorld.InsertComponent(entity2, Position());
 
     // Systems
 
     ecs::Systems ecsSystems{ecsWorld};
+    ecs::SystemExecuteCollection<ecs::IRunSystem> runSystems{};
 
     auto posSystem = ecsSystems.RegisterSystem<PositionSystem>();
+    runSystems.AddSystem(posSystem);
 
     for (auto it = ecsWorld.begin<Position>(); it != ecsWorld.end<Position>(); ++it) {
         auto& component = *it;
@@ -60,7 +63,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << std::endl;
 
-    posSystem->run();
+    runSystems.execute();
 
     for (auto it = ecsWorld.begin<Position>(); it != ecsWorld.end<Position>(); ++it) {
         auto& component = *it;

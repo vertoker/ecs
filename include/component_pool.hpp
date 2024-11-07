@@ -64,6 +64,7 @@ namespace ecs {
         TComponent& GetComponent(const entity entity) {
             return components[entity];
         }
+
         constexpr std::vector<TComponent>::iterator begin() { return components.begin(); }
         constexpr std::vector<TComponent>::iterator end() { return components.end(); }
 

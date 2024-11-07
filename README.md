@@ -13,6 +13,7 @@ Based on:
 - https://github.com/Leopotam/ecslite
 - https://github.com/martinstarkov/ecs/blob/main/include/ecs/ecs.h
 - https://skypjack.github.io/
+- https://habr.com/ru/articles/599801/
 
 And most errors
 - https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
