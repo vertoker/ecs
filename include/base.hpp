@@ -16,5 +16,4 @@ namespace ecs {
 
     static const uint32_t DEFAULT_ENTITIES_CAPACITY = 5000;
     static const uint32_t DEFAULT_ENTITY_CAPACITY = 32;
-    static const uint32_t DEFAULT_COMPONENT_POOLS_CAPACITY = 4;
 }

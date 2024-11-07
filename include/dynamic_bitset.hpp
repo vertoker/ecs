@@ -85,7 +85,6 @@ namespace ecs
             }
             return false;
         }
-
         bool all(size_t start_range, size_t end_range, bool all_value = true) {
 		    assert(start_range <= end_range && "end_range can't be larger than start_range");
 		    assert(end_range < bit_size_ && "end_range out of range");

@@ -19,12 +19,11 @@ namespace ecs {
     class World {
     public:
         World(uint32_t default_entities_capacity = DEFAULT_ENTITIES_CAPACITY, 
-            uint32_t default_entity_capacity = DEFAULT_ENTITY_CAPACITY, 
-            uint32_t default_component_pools_capacity = DEFAULT_COMPONENT_POOLS_CAPACITY) {
+            uint32_t default_entity_capacity = DEFAULT_ENTITY_CAPACITY) {
             
             resize_entities(default_entities_capacity);
             resize_entity(default_entity_capacity);
-            reserve_component_pools(default_component_pools_capacity);
+            reserve_component_pools(default_entity_capacity);
         }
         
     public: // Entities
@@ -32,21 +31,21 @@ namespace ecs {
         entity CreateEntity() {
             assert(entities_count_ < entities_capacity_ && "Too many active entities in world");
 
-            entity newEntity = *destroyed_entities_.begin();
-            destroyed_entities_.erase(newEntity);
+            entity newEntity = *available_entities_.begin();
+            available_entities_.erase(newEntity);
 
             entities_count_++;
             return newEntity;
         }
         
-        void DestroyEntity(entity entity) {
+        void DestroyEntity(const entity entity) {
             assert(entity < entities_capacity_ && "Entity out of world range");
             assert(entities_count_ > 0 && "All entities already destroyed");
 
             signatures[entity].reset();
 
-            assert(!destroyed_entities_.contains(entity) && "Entity already destroyed");
-            destroyed_entities_.insert(entity);
+            assert(!available_entities_.contains(entity) && "Entity already destroyed");
+            available_entities_.insert(entity);
             entities_count_--;
         }
         
@@ -78,7 +77,7 @@ namespace ecs {
     public: // Components
 
         template <typename TComponent>
-        void AddComponent(entity entity, TComponent component) {
+        void AddComponent(const entity entity, TComponent component) {
             auto pool = GetComponentPool<TComponent>();
             pool->InsertComponent(entity, component);
             
@@ -90,7 +89,7 @@ namespace ecs {
         };
         
         template <typename TComponent>
-        void RemoveComponent(entity entity) {
+        void RemoveComponent(const entity entity) {
             assert(entity < signatures.size() && "Entity out of range");
             dynamic_bitset& signature = signatures[entity];
 
@@ -99,16 +98,21 @@ namespace ecs {
         };
         
         template <typename TComponent>
-        TComponent& GetComponent(entity entity) {
+        TComponent& GetComponent(const entity entity) {
             auto pool = GetComponentPool<TComponent>();
             return pool->GetComponent(entity);
         };
         
-        /*template <typename TComponent>
-        TComponent& GetComponents(entity entity) {
+        template <typename TComponent>
+        std::vector<TComponent>::iterator begin() {
             auto pool = GetComponentPool<TComponent>();
-            return pool->GetComponent(entity);
-        };*/
+            return pool->begin();
+        };
+        template <typename TComponent>
+        std::vector<TComponent>::iterator end() {
+            auto pool = GetComponentPool<TComponent>();
+            return pool->end();
+        };
 
     private:
         template <typename TComponent>
@@ -142,13 +146,13 @@ namespace ecs {
 
             if (entities_capacity_ < new_size) {
                 for (entity entity = entities_capacity_; entity < new_size; entity++) {
-                    destroyed_entities_.insert(entity);
+                    available_entities_.insert(entity);
                 }
             }
             else {
                 for (entity entity = new_size - 1; entity >= entities_capacity_; entity--) {
-                    assert(destroyed_entities_.contains(entity) && "Can't erase created entities");
-                    destroyed_entities_.erase(entity);
+                    assert(available_entities_.contains(entity) && "Can't erase created entities");
+                    available_entities_.erase(entity);
                 }
             }
 
@@ -180,7 +184,7 @@ namespace ecs {
         uint32_t pools_capacity_ = 0;
 
         std::vector<dynamic_bitset> signatures;
-        std::set<entity> destroyed_entities_;
+        std::set<entity> available_entities_;
         uint32_t entities_count_ = 0;
 
         std::unordered_map<type_index, std::shared_ptr<AbstractComponentPool>> component_pools_;

@@ -39,7 +39,7 @@ namespace ecs {
             resize(reserve_entities);
         }
 
-        std::shared_ptr<AbstractComponentPool> Clone() const {
+        std::shared_ptr<AbstractComponentPool> clone() const {
             if constexpr (std::is_copy_constructible_v<TComponent>) {
                 auto pool = std::make_shared<ComponentPool<TComponent>>();
                 pool->components = components;
@@ -57,16 +57,15 @@ namespace ecs {
         void clear() { components.clear(); }
         void reset() { clear(); shrink_to_fit(); }
 
-        void InsertComponent(entity entity, TComponent component) {
+        void InsertComponent(const entity entity, TComponent& component) {
             assert(entity < components.size() && "Can't insert component for entity");
             components[entity] = component;
         }
-        TComponent& GetComponent(entity entity) {
+        TComponent& GetComponent(const entity entity) {
             return components[entity];
         }
-        /*std::vector<TComponent>& GetComponents(entity entity) {
-            return components.iter;
-        }*/
+        constexpr std::vector<TComponent>::iterator begin() { return components.begin(); }
+        constexpr std::vector<TComponent>::iterator end() { return components.end(); }
 
     private:
         std::vector<TComponent> components;

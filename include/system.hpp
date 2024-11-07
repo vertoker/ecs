@@ -18,6 +18,11 @@ namespace ecs {
     public:
         virtual ~System() = default;
         World& world() { return *world_; }
+        
+        template <typename TComponent>
+        std::vector<TComponent>::iterator begin() { return world().begin<TComponent>(); };
+        template <typename TComponent>
+        std::vector<TComponent>::iterator end() { return world().end<TComponent>(); };
 
     private:
         std::unique_ptr<World> world_;
