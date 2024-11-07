@@ -15,7 +15,7 @@ struct Position {
 class PositionSystem : public ecs::System, public ecs::IRunSystem {
 public:
     void run() override {
-        for (auto it = begin<Position>(); it != end<Position>(); ++it) {
+        for (auto it = world().begin<Position>(); it != world().end<Position>(); ++it) {
             auto& component = *it;
             component.x += 1;
             component.y += 1;

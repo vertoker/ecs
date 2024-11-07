@@ -21,11 +21,6 @@ namespace ecs {
         virtual ~System() = default;
         World& world() { return *world_; }
         
-        template <typename TComponent>
-        std::vector<TComponent>::iterator begin() { return world().begin<TComponent>(); };
-        template <typename TComponent>
-        std::vector<TComponent>::iterator end() { return world().end<TComponent>(); };
-
     private:
         std::unique_ptr<World> world_;
 
@@ -154,7 +149,7 @@ namespace ecs {
             type_index system_interface_type = TypeIndexator<SystemCollection<TSystemInterface>>::value();
             Execute(system_interface_type);
         }
-        
+
         void Execute(const type_index& system_interface_type) {
             for (auto it = _system_collections.begin(); it != _system_collections.end(); it++) {
                 auto& pair = *it;
