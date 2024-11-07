@@ -27,9 +27,8 @@ public:
 int main(int argc, char* argv[]) {
     std::cout << ecs::TypeIndexator<A>::value();
     std::cout << ecs::TypeIndexator<B>::value();
-    //std::cout << ecs::TypeIndexator<C>::value();
-    std::cout << ecs::TypeIndexator<B>::value();
-    std::cout << ecs::TypeIndexator<A>::value();
+    std::cout << ecs::TypeIndexator<ecs::SystemCollection<ecs::IInitSystem>>::value();
+    std::cout << ecs::TypeIndexator<ecs::SystemCollection<ecs::IRunSystem>>::value();
     std::cout << std::endl;
 
     // World
@@ -50,14 +49,12 @@ int main(int argc, char* argv[]) {
     world.InsertComponent(entity2, Position());
 
     auto& signature2 = world.GetSignature(entity2);
-    
     // Systems
 
-    ecs::Systems ecsSystems{world};
-    ecs::SystemCollection<ecs::IRunSystem> runSystems{};
-
-    auto posSystem = ecsSystems.RegisterSystem<PositionSystem>();
-    runSystems.AddSystem(posSystem);
+    ecs::Systems systems{world};
+    auto runSystems = systems.RegisterSystemInterface<ecs::SystemCollection<ecs::IRunSystem>>();
+    auto posSystem = systems.RegisterSystem<PositionSystem>();
+    runSystems->AddSystem(posSystem);
 
     for (auto it = world.begin<Position>(); it != world.end<Position>(); ++it) {
         auto& component = *it;
@@ -65,7 +62,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << std::endl;
 
-    runSystems.execute();
+    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
 
     for (auto it = world.begin<Position>(); it != world.end<Position>(); ++it) {
         auto& component = *it;
