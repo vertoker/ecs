@@ -15,12 +15,12 @@ struct Position {
 class PositionSystem : public ecs::System, public ecs::IRunSystem {
 public:
     void run() override {
-        for (auto it = world().begin<Position>(); it != world().end<Position>(); ++it) {
+        for (auto it = world().ebegin<Position>(); it != world().eend<Position>(); ++it) {
             auto& component = *it;
             component.x += 1;
             component.y += 1;
             component.z += 1;
-        }
+        } // doesn't save iterator
     }
 };
 
@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
     world.RegisterComponent<Position>();
 
     world.InsertComponent(entity1, A{});
+    world.InsertComponent(entity1, A{});
     //world.AddComponent(entity1, A{});
-    //world.InsertComponent(entity2, B{.v1=1});
     world.InsertComponent(entity2, Position());
 
     auto& signature2 = world.GetSignature(entity2);

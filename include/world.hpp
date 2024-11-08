@@ -15,7 +15,7 @@
 #include <set>
 
 namespace ecs {
-    
+
     class World {
     public:
         World(uint32_t default_entities_capacity = DEFAULT_ENTITIES_CAPACITY, 
@@ -25,57 +25,101 @@ namespace ecs {
             resize_entity(default_entity_capacity);
             reserve_component_pools(default_entity_capacity);
         }
+
+    private:
+        #define assert_entity_range(entity) assert(entity < _entities_capacity && "Entity out of range");
+        #define assert_signature_exists(entity) assert(_signatures.contains(entity) && "Entity's signature doesn't exists");
+        #define assert_destroyed_entity(entity) assert(_available_entities.contains(entity) && "Entity doesn't destroyed");
+        #define assert_created_entity(entity) assert(!_available_entities.contains(entity) && "Entity doesn't created");
+
+    public:
+        class iterator {
+        public:
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type = std::ptrdiff_t;
+
+            constexpr iterator(uint8_t* ptr, const uint8_t& offset)
+                : _ptr(ptr), _offset{offset} {}
+
+            bool operator*() const
+            {
+    	        return true;
+            }
+
+            iterator& operator++() { // Prefix increment
+                if (_offset >= 7) {
+                    ++_ptr;
+                    _offset = 0;
+                }
+                else {
+                    ++_offset;
+                }
+                return *this;
+            }
+            iterator operator++(int) { // Postfix increment
+                iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
+            [[nodiscard]] friend bool operator== (const iterator& a, const iterator& b)
+                { return a._ptr == b._ptr && a._offset == b._offset; };
+            [[nodiscard]] friend bool operator!= (const iterator& a, const iterator& b)
+                { return a._ptr != b._ptr || a._offset != b._offset; };
+
+        private:
+            uint8_t* _ptr;
+            uint8_t _offset;
+        };
         
     public: // Entities
 
-        entity CreateEntity() {
-            assert(_available_entities.size() > 0 && "Doesn't have available entities, expand entities capacity");
+        [[nodiscard]] entity CreateEntity() {
+            assert(_available_entities.size() > 0 && "Doesn't have available entities, do expand entities capacity");
 
             entity newEntity = *_available_entities.begin();
+
+            assert_destroyed_entity(newEntity);
             _available_entities.erase(newEntity);
+            _signatures.insert_or_assign(newEntity, dynamic_bitset{_entity_capacity});
 
             _entities_count++;
             return newEntity;
         }
         
         void DestroyEntity(const entity entity) {
-            assert(entity < _entities_capacity && "Entity out of world range");
+            assert_entity_range(entity);
             assert(_entities_count > 0 && "All entities already destroyed");
 
+            assert_signature_exists(entity);
             _signatures[entity].reset();
 
-            assert(!_available_entities.contains(entity) && "Entity already destroyed");
+            assert_created_entity(entity);
             _available_entities.insert(entity);
+            
             _entities_count--;
         }
 
         bool ExistsEntity(const entity entity) {
-            assert(entity < _entities_capacity && "Entity out of range");
+            assert_entity_range(entity);
             if (_entities_count == 0) return false;
             return !_available_entities.contains(entity);
         }
 
-        dynamic_bitset& GetSignature(const entity entity) {
-            assert(entity < _entities_capacity && "Entity out of range");
-            assert(!_available_entities.contains(entity) && "Entity doesn't created");
+        [[nodiscard]] dynamic_bitset& GetSignature(const entity entity) {
+            assert_entity_range(entity);
+            assert_signature_exists(entity);
+            assert_created_entity(entity);
+
             return _signatures[entity];
         }
         void SetSignature(const entity entity, dynamic_bitset signature) {
-            assert(entity < _entities_capacity && "Entity out of range");
-            assert(!_available_entities.contains(entity) && "Entity doesn't created");
+            assert_entity_range(entity);
+            assert_signature_exists(entity);
+            assert_created_entity(entity);
+
             _signatures[entity] = signature;
         }
-
-        std::vector<dynamic_bitset>::iterator begin(const entity entity) { // TODO fix filtering
-            assert(entity < _entities_capacity && "Entity out of range");
-            assert(!_available_entities.contains(entity) && "Entity doesn't created");
-            return _signatures.begin();
-        };
-        std::vector<dynamic_bitset>::iterator end(const entity entity) {
-            assert(entity < _entities_capacity && "Entity out of range");
-            assert(!_available_entities.contains(entity) && "Entity doesn't created");
-            return _signatures.end();
-        };
         
     public: // Component Pools
 
@@ -90,12 +134,12 @@ namespace ecs {
 
             static size_t component_counter = 0;
             _component_indexes.insert_or_assign(component_type, component_counter++);
-        };
+        }
 
         // UnregisterComponent is all lost feature
 
         template <typename TComponent>
-        size_t GetComponentTypeIndex() {
+        [[nodiscard]] size_t GetComponentTypeIndex() {
             type_index component_type = TypeIndexator<TComponent>::value();
             assert(_component_pools.contains(component_type) && "Component is not registered");
 
@@ -107,11 +151,14 @@ namespace ecs {
         template <typename TComponent>
         void AddComponent(const entity entity, TComponent component) {
             assert(!ContainsComponent<TComponent>(entity) && "Already contains this component in this entity");
+            assert_entity_range(entity);
 
             auto pool = GetComponentPool<TComponent>();
             pool->InsertComponent(entity, component);
             
-            assert(entity < _signatures.size() && "Entity out of range");
+            assert_signature_exists(entity);
+            assert_created_entity(entity);
+            
             dynamic_bitset& signature = _signatures[entity];
             size_t index = GetComponentTypeIndex<TComponent>();
             signature.set(index, true);
@@ -119,51 +166,85 @@ namespace ecs {
 
         template <typename TComponent>
         void InsertComponent(const entity entity, TComponent component) {
+            assert_entity_range(entity);
+
             auto pool = GetComponentPool<TComponent>();
             pool->InsertComponent(entity, component);
             
-            assert(entity < _signatures.size() && "Entity out of range");
+            assert_signature_exists(entity);
+            assert_created_entity(entity);
+
             dynamic_bitset& signature = _signatures[entity];
             size_t index = GetComponentTypeIndex<TComponent>();
             signature.set(index, true);
-        };
+        }
         
         template <typename TComponent>
         void RemoveComponent(const entity entity) {
-            assert(entity < _entities_capacity && "Entity out of range");
+            assert_entity_range(entity);
+            assert_signature_exists(entity);
+            assert_created_entity(entity);
+
+            auto pool = GetComponentPool<TComponent>();
+            pool->RemoveComponent(entity);
+
             dynamic_bitset& signature = _signatures[entity];
             size_t index = GetComponentTypeIndex<TComponent>();
             signature.set(index, false);
-        };
+        }
         
         template <typename TComponent>
-        TComponent& GetComponent(const entity entity) {
+        [[nodiscard]] TComponent& GetComponent(const entity entity) {
             auto pool = GetComponentPool<TComponent>();
             return pool->GetComponent(entity);
-        };
+        }
 
         template <typename TComponent>
-        bool ContainsComponent(const entity entity) {
-            assert(entity < _entities_capacity && "Entity out of range");
+        [[nodiscard]] bool ContainsComponent(const entity entity) {
+            assert_entity_range(entity);
+            assert_signature_exists(entity);
+            assert_created_entity(entity);
+
             dynamic_bitset& signature = _signatures[entity];
             size_t index = GetComponentTypeIndex<TComponent>();
             return signature.get(index);
         }
+
+    public: // Iterators
+
+        std::unordered_map<entity, dynamic_bitset>::iterator ebegin() { // create component iterator
+            return _signatures.begin();
+        }
+        std::unordered_map<entity, dynamic_bitset>::iterator eend() {
+            return _signatures.end();
+        }
         
         template <typename TComponent>
-        std::vector<TComponent>::iterator begin() {
+        [[nodiscard]] ComponentPool<TComponent>::iterator ebegin() {
+            auto pool = GetComponentPool<TComponent>();
+            return pool->ebegin();
+        }
+        template <typename TComponent>
+        [[nodiscard]] ComponentPool<TComponent>::iterator eend() {
+            auto pool = GetComponentPool<TComponent>();
+            return pool->eend();
+        }
+        
+        template <typename TComponent>
+        [[nodiscard]] std::vector<TComponent>::iterator begin() {
             auto pool = GetComponentPool<TComponent>();
             return pool->begin();
         };
         template <typename TComponent>
-        std::vector<TComponent>::iterator end() {
+        [[nodiscard]] std::vector<TComponent>::iterator end() {
             auto pool = GetComponentPool<TComponent>();
             return pool->end();
-        };
+        }
+
 
     private:
         template <typename TComponent>
-        std::shared_ptr<ComponentPool<TComponent>> GetOrCreateComponentPool() {
+        [[nodiscard]] std::shared_ptr<ComponentPool<TComponent>> GetOrCreateComponentPool() {
             type_index component_type = TypeIndexator<TComponent>::value();
 
             if (_component_pools.find(component_type) == _component_pools.end()) {
@@ -176,7 +257,7 @@ namespace ecs {
         }
 
         template <typename TComponent>
-        std::shared_ptr<ComponentPool<TComponent>> GetComponentPool() {
+        [[nodiscard]] std::shared_ptr<ComponentPool<TComponent>> GetComponentPool() {
             type_index component_type = TypeIndexator<TComponent>::value();
 
             assert(_component_pools.find(component_type) != _component_pools.end() && "ComponentPool can't found, register component");
@@ -200,16 +281,15 @@ namespace ecs {
                     _available_entities.erase(entity);
                 }
             }
-
-            _signatures.resize(new_size);
+            
             _entities_capacity = new_size;
         }
         void resize_entity(uint32_t new_size) {
             if (new_size == _entities_capacity) return;
 
-            for (auto i = 0; i < _signatures.size(); i++) {
-                auto& signature = _signatures[i];
-                signature.resize(new_size);
+            for (auto it = _signatures.begin(); it != _signatures.end(); it++) {
+                auto& pair = *it;
+                pair.second.resize(new_size);
             }
 
             _entity_capacity = new_size;
@@ -228,7 +308,7 @@ namespace ecs {
         uint32_t _entity_capacity = 0;
         uint32_t _pools_capacity = 0;
 
-        std::vector<dynamic_bitset> _signatures; // make map
+        std::unordered_map<entity, dynamic_bitset> _signatures;
         std::set<entity> _available_entities;
         uint32_t _entities_count = 0;
 

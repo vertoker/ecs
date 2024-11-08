@@ -3,8 +3,9 @@
 Required C++20
 
 TODO
-- add systems interfaces with custom calls
+- fix iterators for systems
 - add tests
+- add multithreading support
 - refactor this to the library for CMake
 
 Based on:

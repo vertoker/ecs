@@ -6,6 +6,7 @@
 #include <vector>
 #include <type_traits>
 #include <cassert>
+#include <set>
 
 namespace ecs {
 
@@ -23,7 +24,44 @@ namespace ecs {
         static_assert(std::is_move_constructible_v<TComponent>, "Cannot create pool for component which is not move constructible");
 	    static_assert(std::is_destructible_v<TComponent>, "Cannot create pool for component which is not destructible");
         static_assert(std::is_default_constructible_v<TComponent>, "Cannot create pool for component which doesn't has default constructor");
+    
+    public:
+        class iterator {
+        public:
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type = std::ptrdiff_t;
 
+            iterator(const std::set<entity>::iterator& setIter, const std::vector<TComponent>& vec)
+                : _setIter(setIter), _vec{vec} {}
+            
+            TComponent& operator*() {
+                auto& entity = *_setIter;
+                return _vec.at(entity);
+            }
+            TComponent* operator->() {
+                auto entity = *_setIter;
+                return *_vec[entity];
+            }
+
+            iterator& operator++() { // Prefix increment
+                ++_setIter;
+                return *this;
+            }
+            iterator operator++(int) { // Postfix increment
+                iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
+            [[nodiscard]] friend bool operator== (const iterator& a, const iterator& b)
+                { return a._setIter == b._setIter; };
+            [[nodiscard]] friend bool operator!= (const iterator& a, const iterator& b)
+                { return a._setIter != b._setIter; };
+
+        private:
+            std::set<entity>::iterator _setIter;
+            std::vector<TComponent> _vec;
+        };
     public:
         // Constructors
         ComponentPool() = default;
@@ -42,7 +80,7 @@ namespace ecs {
         std::shared_ptr<IComponentPool> clone() const {
             if constexpr (std::is_copy_constructible_v<TComponent>) {
                 auto pool = std::make_shared<ComponentPool<TComponent>>();
-                pool->components = components;
+                pool->_components = _components;
                 return pool;
             } else {
                 assert(!"Cannot clone component pool with a nin copy constructible component");
@@ -50,25 +88,49 @@ namespace ecs {
             }
         }
 
-        void reserve(std::size_t new_capacity) { components.reserve(new_capacity); }
-        void resize(size_t new_size) { components.resize(new_size); }
-        void shrink_to_fit() { components.shrink_to_fit(); }
+        void reserve(size_t new_capacity) {
+            _components.reserve(new_capacity);
+        }
+        void resize(size_t new_size) {
+            _components.resize(new_size);
+        }
+        void shrink_to_fit() {
+            _components.shrink_to_fit();
+        }
 
-        void clear() { components.clear(); }
-        void reset() { clear(); shrink_to_fit(); }
-
+        void clear() {
+            _components.clear();
+            _entities.clear();
+        }
+        void reset() {
+            clear();
+            shrink_to_fit();
+        }
+        
         void InsertComponent(const entity entity, TComponent& component) {
-            assert(entity < components.size() && "Can't insert component for entity");
-            components[entity] = component;
+            assert(entity < _components.size() && "Entity out of range");
+            _components[entity] = component;
+            _entities.insert(entity);
+        }
+        void RemoveComponent(const entity entity) {
+            assert(entity < _components.size() && "Entity out of range");
+            assert(_entities.contains(entity) && "Entity doesn't assign");
+            _entities.erase(entity);
         }
         TComponent& GetComponent(const entity entity) {
-            return components[entity];
+            assert(entity < _components.size() && "Entity out of range");
+            return _components[entity];
         }
 
-        constexpr std::vector<TComponent>::iterator begin() { return components.begin(); } // Iterate with entity filter
-        constexpr std::vector<TComponent>::iterator end() { return components.end(); }
+        [[nodiscard]] std::vector<TComponent>::iterator begin() { return _components.begin(); }
+        [[nodiscard]] std::vector<TComponent>::iterator end() { return _components.end(); }
+
+        // e = entity, iterate components only for entities
+        [[nodiscard]] iterator ebegin() { return iterator{_entities.begin(), _components}; }
+        [[nodiscard]] iterator eend() { return iterator{_entities.end(), _components}; }
 
     private:
-        std::vector<TComponent> components;
+        std::vector<TComponent> _components{};
+        std::set<entity> _entities{};
     };
 }
