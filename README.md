@@ -1,9 +1,10 @@
-## Crazy ECS experiments
+## Yet Another ECS
 
-Required C++20
+Required C++ 20
+
+My first ECS implementation, may be not enough stable, because I can add random shit like experimental functionalily or broke or remade some stable API. Use my your own risk. Any suggestions are welcome!
 
 TODO
-- simplify systems initializations
 - add tests
 - add multithreading support
 - refactor this to the library for CMake
