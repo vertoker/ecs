@@ -92,7 +92,7 @@ namespace ecs {
             assert(_entities_count > 0 && "All entities already destroyed");
 
             assert_signature_exists(entity);
-            _signatures[entity].reset();
+            _signatures.erase(entity);
 
             assert_created_entity(entity);
             _available_entities.insert(entity);
@@ -153,7 +153,7 @@ namespace ecs {
             assert(!ContainsComponent<TComponent>(entity) && "Already contains this component in this entity");
             assert_entity_range(entity);
 
-            auto pool = GetComponentPool<TComponent>();
+            auto pool = GetPool<TComponent>();
             pool->InsertComponent(entity, component);
             
             assert_signature_exists(entity);
@@ -168,7 +168,7 @@ namespace ecs {
         void InsertComponent(const entity entity, TComponent component) {
             assert_entity_range(entity);
 
-            auto pool = GetComponentPool<TComponent>();
+            auto pool = GetPool<TComponent>();
             pool->InsertComponent(entity, component);
             
             assert_signature_exists(entity);
@@ -185,7 +185,7 @@ namespace ecs {
             assert_signature_exists(entity);
             assert_created_entity(entity);
 
-            auto pool = GetComponentPool<TComponent>();
+            auto pool = GetPool<TComponent>();
             pool->RemoveComponent(entity);
 
             dynamic_bitset& signature = _signatures[entity];
@@ -195,7 +195,7 @@ namespace ecs {
         
         template <typename TComponent>
         [[nodiscard]] TComponent& GetComponent(const entity entity) {
-            auto pool = GetComponentPool<TComponent>();
+            auto pool = GetPool<TComponent>();
             return pool->GetComponent(entity);
         }
 
@@ -211,40 +211,17 @@ namespace ecs {
         }
 
     public: // Iterators
-
-        std::unordered_map<entity, dynamic_bitset>::iterator ebegin() { // create component iterator
+    
+        std::unordered_map<entity, dynamic_bitset>::iterator begin_ent_active() {
             return _signatures.begin();
         }
-        std::unordered_map<entity, dynamic_bitset>::iterator eend() {
+        std::unordered_map<entity, dynamic_bitset>::iterator end_ent_active() {
             return _signatures.end();
         }
-        
-        template <typename TComponent>
-        [[nodiscard]] ComponentPool<TComponent>::iterator ebegin() {
-            auto pool = GetComponentPool<TComponent>();
-            return pool->ebegin();
-        }
-        template <typename TComponent>
-        [[nodiscard]] ComponentPool<TComponent>::iterator eend() {
-            auto pool = GetComponentPool<TComponent>();
-            return pool->eend();
-        }
-        
-        template <typename TComponent>
-        [[nodiscard]] std::vector<TComponent>::iterator begin() {
-            auto pool = GetComponentPool<TComponent>();
-            return pool->begin();
-        };
-        template <typename TComponent>
-        [[nodiscard]] std::vector<TComponent>::iterator end() {
-            auto pool = GetComponentPool<TComponent>();
-            return pool->end();
-        }
 
-
-    private:
+    public: // Pools
         template <typename TComponent>
-        [[nodiscard]] std::shared_ptr<ComponentPool<TComponent>> GetOrCreateComponentPool() {
+        [[nodiscard]] std::shared_ptr<ComponentPool<TComponent>> GetOrCreatePool() {
             type_index component_type = TypeIndexator<TComponent>::value();
 
             if (_component_pools.find(component_type) == _component_pools.end()) {
@@ -257,7 +234,7 @@ namespace ecs {
         }
 
         template <typename TComponent>
-        [[nodiscard]] std::shared_ptr<ComponentPool<TComponent>> GetComponentPool() {
+        [[nodiscard]] std::shared_ptr<ComponentPool<TComponent>> GetPool() {
             type_index component_type = TypeIndexator<TComponent>::value();
 
             assert(_component_pools.find(component_type) != _component_pools.end() && "ComponentPool can't found, register component");

@@ -12,16 +12,22 @@ struct Position {
         : x{x}, y{y}, z{z} { }
 };
 
-class PositionSystem : public ecs::System, public ecs::IRunSystem {
+class PositionSystem : public ecs::System, public ecs::IRunSystem, public ecs::IInitSystem {
 public:
+    void init() override {
+        _pool = world().GetPool<Position>();
+    }
+
     void run() override {
-        for (auto it = world().ebegin<Position>(); it != world().eend<Position>(); ++it) {
+        for (auto it = _pool->begin_comp_active(); it != _pool->end_comp_active(); ++it) {
             auto& component = *it;
             component.x += 1;
             component.y += 1;
             component.z += 1;
-        } // doesn't save iterator
+        }
     }
+private:
+    std::shared_ptr<ecs::ComponentPool<Position>> _pool;
 };
 
 int main(int argc, char* argv[]) {
@@ -49,22 +55,36 @@ int main(int argc, char* argv[]) {
     world.InsertComponent(entity2, Position());
 
     auto& signature2 = world.GetSignature(entity2);
+
     // Systems
 
     ecs::Systems systems{world};
-    auto runSystems = systems.RegisterSystemInterface<ecs::SystemCollection<ecs::IRunSystem>>();
-    auto posSystem = systems.RegisterSystem<PositionSystem>();
+    auto runSystems = systems.CreateCollectionInterface<ecs::IRunSystem>();
+    auto initSystems = systems.CreateCollectionInterface<ecs::IInitSystem>();
+
+    auto posSystem = systems.CreateSystem<PositionSystem>();
+    initSystems->AddSystem(posSystem);
     runSystems->AddSystem(posSystem);
 
-    for (auto it = world.begin<Position>(); it != world.end<Position>(); ++it) {
+    auto position_pool = world.GetPool<Position>();
+
+    // Loop
+
+    for (auto it = position_pool->begin_comp_all(); it != position_pool->end_comp_all(); ++it) {
         auto& component = *it;
         std::cout << component.x;
     }
     std::cout << std::endl;
 
+    systems.ExecuteCollectionInterface<ecs::IInitSystem>();
+
+    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
+    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
+    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
+    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
     systems.ExecuteCollectionInterface<ecs::IRunSystem>();
 
-    for (auto it = world.begin<Position>(); it != world.end<Position>(); ++it) {
+    for (auto it = position_pool->begin_comp_all(); it != position_pool->end_comp_all(); ++it) {
         auto& component = *it;
         std::cout << component.x;
     }

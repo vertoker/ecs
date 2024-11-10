@@ -3,7 +3,7 @@
 Required C++20
 
 TODO
-- fix iterators for systems
+- simplify systems initializations
 - add tests
 - add multithreading support
 - refactor this to the library for CMake

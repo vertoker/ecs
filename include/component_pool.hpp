@@ -31,7 +31,7 @@ namespace ecs {
             using iterator_category = std::forward_iterator_tag;
             using difference_type = std::ptrdiff_t;
 
-            iterator(const std::set<entity>::iterator& setIter, const std::vector<TComponent>& vec)
+            iterator(std::set<entity>::iterator setIter, std::vector<TComponent>& vec)
                 : _setIter(setIter), _vec{vec} {}
             
             TComponent& operator*() {
@@ -60,7 +60,7 @@ namespace ecs {
 
         private:
             std::set<entity>::iterator _setIter;
-            std::vector<TComponent> _vec;
+            std::vector<TComponent>& _vec;
         };
     public:
         // Constructors
@@ -122,12 +122,20 @@ namespace ecs {
             return _components[entity];
         }
 
-        [[nodiscard]] std::vector<TComponent>::iterator begin() { return _components.begin(); }
-        [[nodiscard]] std::vector<TComponent>::iterator end() { return _components.end(); }
+        [[nodiscard]] std::vector<TComponent>::iterator begin_comp_all() { return _components.begin(); }
+        [[nodiscard]] std::vector<TComponent>::iterator end_comp_all() { return _components.end(); }
 
         // e = entity, iterate components only for entities
-        [[nodiscard]] iterator ebegin() { return iterator{_entities.begin(), _components}; }
-        [[nodiscard]] iterator eend() { return iterator{_entities.end(), _components}; }
+        [[nodiscard]] iterator begin_comp_active() {
+            auto entities = _entities.begin();
+            auto& components = _components;
+            return iterator{entities, components};
+        }
+        [[nodiscard]] iterator end_comp_active() {
+            auto entities = _entities.end();
+            auto& components = _components;
+            return iterator{entities, components};
+        }
 
     private:
         std::vector<TComponent> _components{};

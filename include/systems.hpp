@@ -97,7 +97,7 @@ namespace ecs {
     public: // Systems
 
         template<class TSystem> requires is_system<TSystem>
-        [[nodiscard]] std::shared_ptr<TSystem> RegisterSystem() {
+        [[nodiscard]] std::shared_ptr<TSystem> CreateSystem() {
             //static_assert(std::is_default_constructible_v<TSystem>, "System must contains default constructor");
             type_index system_type = TypeIndexator<TSystem>::value();
             assert(!_systems.contains(system_type) && "Already exists same type system");
@@ -111,17 +111,21 @@ namespace ecs {
         }
 
         template<class TSystem> requires is_system<TSystem>
-        void UnregisterSystem() {
+        void DestroySystem() {
             type_index system_type = TypeIndexator<TSystem>::value();
             assert(_systems.contains(system_type) && "Can't find system in systems");
             
             _systems.erase(system_type);
         }
         
-    public: // System Collections
+    public: // System Interfaces
 
         template<class TSystemInterface> requires is_system_interface<TSystemInterface>
-        [[nodiscard]] std::shared_ptr<TSystemInterface> RegisterSystemInterface() {
+        [[nodiscard]] std::shared_ptr<SystemCollection<TSystemInterface>> CreateCollectionInterface() {
+            return CreateInterface<SystemCollection<TSystemInterface>>();
+        }
+        template<class TSystemInterface> requires is_system_interface<TSystemInterface>
+        [[nodiscard]] std::shared_ptr<TSystemInterface> CreateInterface() {
             type_index system_interface_type = TypeIndexator<TSystemInterface>::value();
             assert(!_system_collections.contains(system_interface_type) && "Already exists same type system interface");
 
@@ -131,13 +135,20 @@ namespace ecs {
             return system_collection;
         }
 
+        
         template<class TSystemInterface> requires is_system_interface<TSystemInterface>
-        void UnregisterSystemInterface() {
+        void DestroyCollectionInterface() {
+            DestroyInterface<SystemCollection<TSystemInterface>>();
+        }
+        template<class TSystemInterface> requires is_system_interface<TSystemInterface>
+        void DestroyInterface() {
             type_index system_interface_type = TypeIndexator<TSystemInterface>::value();
-            assert(_system_collections.contains(system_interface_type) && "Can't find system interface in systems collections");
+            assert(_system_collections.contains(system_interface_type) && "Can't find system interface in systems interfaces");
 
             _system_collections.erase(system_interface_type);
         }
+        
+    public: // System Interfaces Execution
 
         template<typename TSystemInterface> requires is_system_interface<TSystemInterface>
         void ExecuteInterface() {
