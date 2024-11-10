@@ -1,3 +1,0 @@
-some data for something
-
-use resources/ for all of your loadable data
