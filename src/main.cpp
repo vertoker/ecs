@@ -12,12 +12,8 @@ struct Position {
         : x{x}, y{y}, z{z} { }
 };
 
-class PositionSystem : public ecs::System, public ecs::IRunSystem, public ecs::IInitSystem {
+class PositionSystem : public ecs::BaseSystem<Position> {
 public:
-    void init() override {
-        _pool = world().GetPool<Position>();
-    }
-
     void run() override {
         for (auto it = _pool->begin_comp_active(); it != _pool->end_comp_active(); ++it) {
             auto& component = *it;
@@ -26,8 +22,6 @@ public:
             component.z += 1;
         }
     }
-private:
-    std::shared_ptr<ecs::ComponentPool<Position>> _pool;
 };
 
 int main(int argc, char* argv[]) {
@@ -53,14 +47,15 @@ int main(int argc, char* argv[]) {
     world.InsertComponent(entity1, A{});
     //world.AddComponent(entity1, A{});
     world.InsertComponent(entity2, Position());
-
+    
     auto& signature2 = world.GetSignature(entity2);
 
     // Systems
 
     ecs::Systems systems{world};
-    auto runSystems = systems.CreateCollectionInterface<ecs::IRunSystem>();
     auto initSystems = systems.CreateCollectionInterface<ecs::IInitSystem>();
+    auto runSystems = systems.CreateCollectionInterface<ecs::IRunSystem>();
+    auto destroySystems = systems.CreateCollectionInterface<ecs::IDestroySystem>();
 
     auto posSystem = systems.CreateSystem<PositionSystem>();
     initSystems->AddSystem(posSystem);
@@ -79,10 +74,10 @@ int main(int argc, char* argv[]) {
     systems.ExecuteCollectionInterface<ecs::IInitSystem>();
 
     systems.ExecuteCollectionInterface<ecs::IRunSystem>();
-    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
-    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
-    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
-    systems.ExecuteCollectionInterface<ecs::IRunSystem>();
+    runSystems->execute();
+    runSystems->execute();
+    runSystems->execute();
+    runSystems->execute();
 
     for (auto it = position_pool->begin_comp_all(); it != position_pool->end_comp_all(); ++it) {
         auto& component = *it;

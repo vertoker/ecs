@@ -80,6 +80,22 @@ namespace ecs {
         std::unordered_set<std::shared_ptr<ISystem>> systems{};
     };
 
+    // System Templates (you can add yours)
+
+    template <typename TComponent>
+    class BaseSystem : public System, public IRunSystem, public IInitSystem, public IDestroySystem {
+    public:
+        void init() override {
+            _pool = world(). template /*wtf template here*/ GetPool<TComponent>();
+        }
+        void destroy() override {
+            _pool = nullptr;
+        }
+        
+    protected:
+        std::shared_ptr<ecs::ComponentPool<TComponent>> _pool;
+    };
+
 
     // Core Systems
 
@@ -134,7 +150,6 @@ namespace ecs {
             _system_collections.insert_or_assign(system_interface_type, system_collection_interface);
             return system_collection;
         }
-
         
         template<class TSystemInterface> requires is_system_interface<TSystemInterface>
         void DestroyCollectionInterface() {
@@ -143,7 +158,7 @@ namespace ecs {
         template<class TSystemInterface> requires is_system_interface<TSystemInterface>
         void DestroyInterface() {
             type_index system_interface_type = TypeIndexator<TSystemInterface>::value();
-            assert(_system_collections.contains(system_interface_type) && "Can't find system interface in systems interfaces");
+            assert(_system_collections.contains(system_interface_type) && "Can't find system interface");
 
             _system_collections.erase(system_interface_type);
         }
@@ -162,11 +177,8 @@ namespace ecs {
         }
 
         void Execute(const type_index& system_interface_type) {
-            for (auto it = _system_collections.begin(); it != _system_collections.end(); it++) {
-                auto& pair = *it;
-                if (pair.first != system_interface_type) continue;
-                pair.second->execute(); 
-            }
+            assert(_system_collections.contains(system_interface_type) && "Can't find system interface");
+            _system_collections[system_interface_type]->execute();
         }
         
     private:

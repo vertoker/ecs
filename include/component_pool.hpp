@@ -62,7 +62,9 @@ namespace ecs {
             std::set<entity>::iterator _setIter;
             std::vector<TComponent>& _vec;
         };
-    public:
+
+    public: // Core
+
         // Constructors
         ComponentPool() = default;
         ~ComponentPool() = default;
@@ -114,13 +116,15 @@ namespace ecs {
         }
         void RemoveComponent(const entity entity) {
             assert(entity < _components.size() && "Entity out of range");
-            assert(_entities.contains(entity) && "Entity doesn't assign");
+            assert(_entities.contains(entity) && "Entity doesn't have that component");
             _entities.erase(entity);
         }
         TComponent& GetComponent(const entity entity) {
             assert(entity < _components.size() && "Entity out of range");
             return _components[entity];
         }
+
+    public: // Iterators
 
         [[nodiscard]] std::vector<TComponent>::iterator begin_comp_all() { return _components.begin(); }
         [[nodiscard]] std::vector<TComponent>::iterator end_comp_all() { return _components.end(); }
@@ -136,7 +140,7 @@ namespace ecs {
             auto& components = _components;
             return iterator{entities, components};
         }
-
+        
     private:
         std::vector<TComponent> _components{};
         std::set<entity> _entities{};
