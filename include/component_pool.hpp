@@ -15,6 +15,15 @@ namespace ecs {
     class IComponentPool {
     public:
         virtual ~IComponentPool() = default;
+        
+        virtual void reserve(size_t new_capacity) = 0;
+        virtual void resize(size_t new_size) = 0;
+        virtual void shrink_to_fit() = 0;
+
+        virtual void clear() = 0;
+        virtual void reset() = 0;
+
+        virtual void RemoveComponent(const entity entity) = 0;
     };
 
     // Component Pool
@@ -79,33 +88,21 @@ namespace ecs {
             resize(reserve_entities);
         }
 
-        std::shared_ptr<IComponentPool> clone() const {
-            if constexpr (std::is_copy_constructible_v<TComponent>) {
-                auto pool = std::make_shared<ComponentPool<TComponent>>();
-                pool->_components = _components;
-                pool->_entities = _entities;
-                return pool;
-            } else {
-                assert(!"Cannot clone component pool with a nin copy constructible component");
-                return nullptr;
-            }
-        }
-
-        void reserve(size_t new_capacity) {
+        void reserve(size_t new_capacity) override {
             _components.reserve(new_capacity);
         }
-        void resize(size_t new_size) {
+        void resize(size_t new_size) override {
             _components.resize(new_size);
         }
-        void shrink_to_fit() {
+        void shrink_to_fit() override {
             _components.shrink_to_fit();
         }
 
-        void clear() {
+        void clear() override {
             _components.clear();
             _entities.clear();
         }
-        void reset() {
+        void reset() override {
             clear();
             shrink_to_fit();
         }
@@ -115,7 +112,7 @@ namespace ecs {
             _components[entity] = component;
             _entities.insert(entity);
         }
-        void RemoveComponent(const entity entity) {
+        void RemoveComponent(const entity entity) override {
             assert(entity < _components.size() && "Entity out of range");
             assert(_entities.contains(entity) && "Entity doesn't have that component");
             _entities.erase(entity);

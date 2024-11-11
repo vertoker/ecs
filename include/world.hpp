@@ -28,6 +28,7 @@ namespace ecs {
 
     private:
         #define assert_entity_range(entity) assert(entity < _entities_capacity && "Entity out of range");
+        #define assert_component_types() assert(_components.size() <= _entity_capacity && "Count of registered components is bigger than entity capacity");
         #define assert_signature_exists(entity) assert(_signatures.contains(entity) && "Entity's signature doesn't exists");
         #define assert_destroyed_entity(entity) assert(_available_entities.contains(entity) && "Entity doesn't destroyed");
         #define assert_created_entity(entity) assert(!_available_entities.contains(entity) && "Entity doesn't created");
@@ -88,9 +89,11 @@ namespace ecs {
         }
         
         void DestroyEntity(const entity entity) {
-            assert_entity_range(entity);
             assert(_entities_count > 0 && "All entities already destroyed");
-
+            
+            RemoveAllComponents(entity);
+            
+            assert_entity_range(entity);
             assert_signature_exists(entity);
             _signatures.erase(entity);
 
@@ -101,7 +104,7 @@ namespace ecs {
         }
 
         bool ExistsEntity(const entity entity) {
-            assert_entity_range(entity);
+            if (entity >= _entities_capacity) return false;
             if (_entities_count == 0) return false;
             return !_available_entities.contains(entity);
         }
@@ -132,17 +135,19 @@ namespace ecs {
             auto interfacePool = std::static_pointer_cast<IComponentPool>(pool);
             _component_pools.insert_or_assign(component_type, interfacePool);
 
-            static size_t component_counter = 0;
-            _component_indexes.insert_or_assign(component_type, component_counter++);
+            _component_indexes.insert_or_assign(component_type, _components.size());
+            _components.emplace_back(component_type);
         }
 
-        // UnregisterComponent is all lost feature
+        // UnregisterComponent is a lost feature, to hard to implement
 
         template <typename TComponent>
         [[nodiscard]] size_t GetComponentTypeIndex() {
             type_index component_type = TypeIndexator<TComponent>::value();
+            return GetComponentTypeIndex(component_type);
+        }
+        [[nodiscard]] size_t GetComponentTypeIndex(const type_index component_type) {
             assert(_component_pools.contains(component_type) && "Component is not registered");
-
             return _component_indexes[component_type];
         }
 
@@ -151,17 +156,7 @@ namespace ecs {
         template <typename TComponent>
         void AddComponent(const entity entity, TComponent component) {
             assert(!ContainsComponent<TComponent>(entity) && "Already contains this component in this entity");
-            assert_entity_range(entity);
-
-            auto pool = GetPool<TComponent>();
-            pool->InsertComponent(entity, component);
-            
-            assert_signature_exists(entity);
-            assert_created_entity(entity);
-            
-            dynamic_bitset& signature = _signatures[entity];
-            size_t index = GetComponentTypeIndex<TComponent>();
-            signature.set(index, true);
+            InsertComponent(entity, component);
         }
 
         template <typename TComponent>
@@ -191,6 +186,18 @@ namespace ecs {
             dynamic_bitset& signature = _signatures[entity];
             size_t index = GetComponentTypeIndex<TComponent>();
             signature.set(index, false);
+        }
+
+        void RemoveAllComponents(const entity entity) {
+            auto signature = GetSignature(entity);
+            assert_component_types();
+            for (auto i = 0; i < _components.size(); i++)
+            {
+                if (!signature[i]) continue;
+                auto component_type = _components[i];
+                auto pool = GetPool(component_type);
+                pool->RemoveComponent(entity);
+            }
         }
         
         template <typename TComponent>
@@ -236,11 +243,14 @@ namespace ecs {
         template <typename TComponent>
         [[nodiscard]] std::shared_ptr<ComponentPool<TComponent>> GetPool() {
             type_index component_type = TypeIndexator<TComponent>::value();
-
+            std::shared_ptr<IComponentPool> componentPool = GetPool(component_type);
+            return std::static_pointer_cast<ComponentPool<TComponent>>(componentPool);
+        }
+        [[nodiscard]] std::shared_ptr<IComponentPool> GetPool(const type_index& component_type) {
             assert(_component_pools.find(component_type) != _component_pools.end() && "ComponentPool can't found, register component");
             
             std::shared_ptr<IComponentPool> componentPool = _component_pools[component_type];
-            return std::static_pointer_cast<ComponentPool<TComponent>>(componentPool);
+            return componentPool;
         }
 
     public: // Data Modification
@@ -277,6 +287,7 @@ namespace ecs {
 
             _component_pools.reserve(new_capacity);
             _component_indexes.reserve(new_capacity);
+            _components.reserve(new_capacity);
             _pools_capacity = new_capacity;
         }
 
@@ -291,5 +302,6 @@ namespace ecs {
 
         std::unordered_map<type_index, std::shared_ptr<IComponentPool>> _component_pools;
         std::unordered_map<type_index, size_t> _component_indexes;
+        std::vector<type_index> _components;
     };
 }

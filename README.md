@@ -1,13 +1,8 @@
 ## Yet Another ECS
 
-Required C++ 20
-
 My first ECS implementation, may be not enough stable, because I can add random shit like experimental functionalily or broke or remade some stable API. Use my your own risk. Any suggestions are welcome!
 
-TODO
-- add tests
-- add multithreading support
-- refactor this to the library for CMake
+Required C++ 20
 
 Based on:
 - https://austinmorlan.com/posts/entity_component_system/
@@ -24,4 +19,3 @@ and other c++ answers:
 
 And most errors
 - https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
-

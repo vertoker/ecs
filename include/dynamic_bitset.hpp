@@ -161,6 +161,8 @@ namespace ecs
             return const_iterator(&_data.back(), offset);
         }
 
+        // @TODO can be much more efficient if iterate through bytes of data, not bits
+        
         [[nodiscard]] bool any(const size_t& start_range, const size_t& end_range, const bool& any_value = true) {
     	    assert(start_range <= end_range && "end_range can't be larger than start_range");
     	    assert(end_range < _bit_size && "end_range out of range");

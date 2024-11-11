@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.12) # cmake version here
 project(yaecs VERSION 1.0 LANGUAGES CXX) # Your project name here
 
-option(YAECS_TEST "Build test application" ON)
+option(YAECS_TEST "Build test Yet Another ECS" OFF)
 
 
 set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -20,8 +20,8 @@ target_include_directories(yaecs_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(yaecs_lib PROPERTIES LINKER_LANGUAGE CXX)
 
 include_directories("${INCLUDE_DIR}")
- 
-if(${YAECS_TEST})
+
+if("${YAECS_TEST}")
     set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/test")
     file(GLOB_RECURSE TEST CONFIGURE_DEPENDS "${TEST_DIR}/*.c" "${TEST_DIR}/*.cpp")
 

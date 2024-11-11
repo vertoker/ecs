@@ -122,12 +122,5 @@
                 "CMAKE_CXX_COMPILER": "g++"
             }
         }
-    ],
-    "testPresets": [
-        {
-            "name": "core",
-            "description": "",
-            "displayName": ""
-        }
     ]
 }
