@@ -1,7 +1,10 @@
 
 #include "ecs.hpp"
+#include "test_base.hpp"
 
 #include <iostream>
+
+// ECS data
 
 struct A {};
 struct B : A { int v1; };
@@ -24,12 +27,16 @@ public:
     }
 };
 
+
 int main(int argc, char* argv[]) {
-    std::cout << ecs::TypeIndexator<A>::value();
-    std::cout << ecs::TypeIndexator<B>::value();
-    std::cout << ecs::TypeIndexator<ecs::SystemCollection<ecs::IInitSystem>>::value();
-    std::cout << ecs::TypeIndexator<ecs::SystemCollection<ecs::IRunSystem>>::value();
-    std::cout << std::endl;
+
+    auto a_type = ecs::TypeIndexator<A>::value();
+    EXPECT_EQ(0, a_type);
+    EXPECT_EQ(0, ecs::TypeIndexator<A>::value());
+
+    auto b_type = ecs::TypeIndexator<B>::value();
+    EXPECT_EQ(1, b_type);
+    EXPECT_EQ(1, ecs::TypeIndexator<B>::value());
 
     // World
     
@@ -38,6 +45,8 @@ int main(int argc, char* argv[]) {
     ecs::entity entity1 = world.CreateEntity();
     ecs::entity entity2 = world.CreateEntity();
     ecs::entity entity3 = world.CreateEntity();
+    EXPECT_EQ(0, entity1);
+    EXPECT_EQ(2, entity3);
 
     world.RegisterComponent<A>();
     //world.RegisterComponent<B>();
@@ -65,9 +74,12 @@ int main(int argc, char* argv[]) {
 
     // Loop
 
+    size_t counter = 0;
+    auto data = position_pool->clone();
     for (auto it = position_pool->begin_comp_all(); it != position_pool->end_comp_all(); ++it) {
         auto& component = *it;
-        std::cout << component.x;
+        
+        ++counter;
     }
     std::cout << std::endl;
 

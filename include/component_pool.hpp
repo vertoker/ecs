@@ -83,6 +83,7 @@ namespace ecs {
             if constexpr (std::is_copy_constructible_v<TComponent>) {
                 auto pool = std::make_shared<ComponentPool<TComponent>>();
                 pool->_components = _components;
+                pool->_entities = _entities;
                 return pool;
             } else {
                 assert(!"Cannot clone component pool with a nin copy constructible component");
@@ -120,6 +121,11 @@ namespace ecs {
             _entities.erase(entity);
         }
         TComponent& GetComponent(const entity entity) {
+            assert(entity < _components.size() && "Entity out of range");
+            return _components[entity];
+        }
+        
+        [[nodiscard]] TComponent& operator[](const entity entity) const {
             assert(entity < _components.size() && "Entity out of range");
             return _components[entity];
         }

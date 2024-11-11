@@ -20,7 +20,7 @@ target_include_directories(yaecs_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(yaecs_lib PROPERTIES LINKER_LANGUAGE CXX)
 
 include_directories("${INCLUDE_DIR}")
-
+ 
 if(${YAECS_TEST})
     set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/test")
     file(GLOB_RECURSE TEST CONFIGURE_DEPENDS "${TEST_DIR}/*.c" "${TEST_DIR}/*.cpp")
