@@ -1,33 +1,31 @@
 
-#--------------------------------------------------------------------------------
-# Init
-#--------------------------------------------------------------------------------
-
 cmake_minimum_required(VERSION 3.12) # cmake version here
-project(ecs-experimental VERSION 0.1 LANGUAGES CXX) # Your project name here
-set(CMAKE_CXX_STANDARD 20) # C++ version here
+project(yaecs VERSION 1.0 LANGUAGES CXX) # Your project name here
 
-#--------------------------------------------------------------------------------
-# Src & Include
-#--------------------------------------------------------------------------------
+option(YAECS_TEST "Build test application" ON)
 
-# Set variables for short
+
 set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-# Recurse collect every file in include/ and src/ folders
 file(GLOB_RECURSE INCLUDES CONFIGURE_DEPENDS "${INCLUDE_DIR}/*.h" "${INCLUDE_DIR}/*.hpp")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.c" "${SOURCE_DIR}/*.cpp")
 
-# add include/ folder as root for all header files
+
+add_library(yaecs INTERFACE)
+target_include_directories(yaecs INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(yaecs_lib STATIC "${INCLUDES}" "${SOURCES}")
+target_include_directories(yaecs_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(yaecs_lib PROPERTIES LINKER_LANGUAGE CXX)
+
 include_directories("${INCLUDE_DIR}")
 
-# finally add all founded include/ and src/ files into compiler as a program
-add_executable("${CMAKE_PROJECT_NAME}" "${INCLUDES}" "${SOURCES}")
+if(${YAECS_TEST})
+    set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/test")
+    file(GLOB_RECURSE TEST CONFIGURE_DEPENDS "${TEST_DIR}/*.c" "${TEST_DIR}/*.cpp")
 
-# single files zone
-#add_executable("${CMAKE_PROJECT_NAME}" "src/main.cpp")
-
-# single folders zone
-#file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS "src/*.h" "src/*.c" "src/*.hpp" "src/*.cpp")
-#add_executable("${CMAKE_PROJECT_NAME}" "${SOURCES}")
+    add_executable(yaecs_test "${TEST}")
+    target_compile_features(yaecs_test PRIVATE cxx_std_20)
+    target_link_libraries(yaecs_test PRIVATE yaecs_lib)
+endif()

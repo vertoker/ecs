@@ -1,3 +1,9 @@
+// Dynamic bitset (required C++14)
+// Modified version of:
+// https://github.com/syoyo/dynamic_bitset/blob/master/dynamic_bitset.hh
+// https://github.com/martinstarkov/ecs/blob/main/include/ecs/ecs.h
+// Reworked and improved by vertoker
+
 #pragma once
 
 #include <vector>
@@ -61,6 +67,7 @@ namespace ecs
         dynamic_bitset(const dynamic_bitset&) = default;
         dynamic_bitset& operator=(const dynamic_bitset&) = default;
 
+    public:
         void set(const size_t& bit_index, const bool& value = true) {
             size_t byte_index = bit_index / 8;
     	    uint8_t offset = static_cast<uint8_t>(bit_index % 8);
@@ -102,6 +109,7 @@ namespace ecs
         [[nodiscard]] bool operator==(const dynamic_bitset& other) const
             { return _bit_size == other._bit_size && _data == other._data; }
 
+    public:
         [[nodiscard]] size_t size() const { return _bit_size; }
         [[nodiscard]] size_t capacity() const { return _data.capacity(); }
         [[nodiscard]] std::vector<uint8_t> data() const { return _data; }
@@ -130,6 +138,19 @@ namespace ecs
             _bit_size = new_size;
         }
 
+        void reset(const bool& value = false) {
+            if (_bit_size == 0) return;
+
+            uint8_t byte_content = value ? ALL1 : ALL0;
+            for (size_t i = 0; i < _data.size(); i++)
+                _data[i] = byte_content;
+            // all bits, which allocated and not in size() updated too
+        }
+
+        void clear() { _bit_size = 0; _data.clear(); }
+        void shrink_to_fit() { _data.shrink_to_fit(); }
+
+    public:
         [[nodiscard]] const_iterator begin() { // TODO make const
             assert(_data.size() > 0 && "Can't iterate empty data");
             return const_iterator(_data.data(), 0);
@@ -162,18 +183,6 @@ namespace ecs
             }
             return true;
         }
-
-        void reset(const bool& value = false) {
-            if (_bit_size == 0) return;
-
-            uint8_t byte_content = value ? ALL1 : ALL0;
-            for (size_t i = 0; i < _data.size(); i++)
-                _data[i] = byte_content;
-            // all bits, which allocated and not in size() updated too
-        }
-
-        void clear() { _bit_size = 0; _data.clear(); }
-        void shrink_to_fit() { _data.shrink_to_fit(); }
 
     private:
         [[nodiscard]] size_t GetByteCount(const size_t& bit_count) {

@@ -20,6 +20,7 @@ and other c++ answers:
 - https://habr.com/ru/companies/yandex/articles/854352/
 - https://habr.com/ru/articles/599801/
 - https://www.internalpointers.com/post/writing-custom-iterators-modern-cpp
+- https://github.com/thisistherk/fast_obj
 
 And most errors
 - https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
